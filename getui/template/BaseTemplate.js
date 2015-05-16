@@ -43,13 +43,13 @@ BaseTemplate.prototype.getActionChain = function () {
     return null;
 };
 BaseTemplate.prototype.getPushInfo = function () {
-    if (this.pushInfo == null) {
+    if (!this.pushInfo) {
         this.pushInfo = new GtReq.PushInfo({
             actionKey: '',
             badge: '-1',
             message: '',
             sound: ''
-        })
+        });
     }
     return this.pushInfo;
 };
@@ -73,7 +73,7 @@ BaseTemplate.prototype.setPushInfo = function (options) {
 
     var payloadLen = ApnsUtils.validatePayloadLength(options);
     if (payloadLen > 256) {
-        throw new Error("PushInfo length over limit: " + payloadLen + ". Allowed: 256.");
+        throw new Error('PushInfo length over limit: ' + payloadLen + '. Allowed: 256.');
     }
     return this;
 };

@@ -34,7 +34,7 @@ function GeTui(host, appkey, masterSecret) {
  *         For any IO Exceptions
  */
 GeTui.prototype.connect = function(callback) {
-    console.log("connect being invoked...");
+    console.log('connect being invoked...');
     var timeStamp = new Date().getTime();
     // 计算sign值
     var sign = utils.md5(this._appkey + timeStamp + this._masterSecret); //必须按顺序
@@ -104,20 +104,20 @@ GeTui.prototype.httpPostJson = function (host, postData, callback) {
     var _this = this;
     httpManager.post(host, postData, function (err, response) {
 //        console.log(response);
-        if (response.result == "sign_error") {
+        if (response.result === 'sign_error') {
             _this.connect(function (err, result) {
 //                console.log(result);
-                if (result == true) {
+                if (!!result) {
                     httpManager.post(host, postData, callback);
                 } else {
-                    console.log("connect failed still");
+                    console.log('connect failed still');
                 }
             });
         } else {
             callback && callback(err, response);
         }
     });
-}
+};
 
 /**
  * 批量推送前需要通过这个接口向服务其申请一个“ContentID”
@@ -126,6 +126,7 @@ GeTui.prototype.httpPostJson = function (host, postData, callback) {
  * @param callback
  */
 GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
+    var _this = this;
     var postData = {
         action: 'getContentIdAction',
         appkey: this._appkey,
@@ -158,7 +159,7 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '获取contentId失败'), response);
+            callback && callback(new Error('host:[' + _this.host + ']' + '获取contentId失败'), response);
         }
     });
 
@@ -172,6 +173,7 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
  * @return boolean 返回是否成功
  */
 GeTui.prototype.cancelContentId = function(contentId, callback) {
+    var _this = this;
     var postData = {
         action: 'cancleContentIdAction',
         appkey: this._appkey,
@@ -181,7 +183,7 @@ GeTui.prototype.cancelContentId = function(contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '取消contentId失败'), false);
+            callback && callback(new Error('host:[' + _this.host + ']' + '取消contentId失败'), false);
         }
     });
 
@@ -199,6 +201,7 @@ GeTui.prototype.cancelContentId = function(contentId, callback) {
  * @return 是否成功停止
  */
 GeTui.prototype.stop = function(contentId, callback) {
+    var _this = this;
     var postData = {
         action: 'stopTaskAction',
         appkey: this._appkey,
@@ -208,7 +211,7 @@ GeTui.prototype.stop = function(contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '取消任务失败'), false)
+            callback && callback(new Error('host:[' + _this.host + ']' + '取消任务失败'), false);
         }
     });
 };
@@ -305,6 +308,7 @@ GeTui.prototype.pushAPNMessageToList = function(appId, contentId, deviceTokenLis
 };
 
 GeTui.prototype.getAPNContentId = function(appId, message, callback) {
+    var _this = this;
     var postData = {
         action: 'apnGetContentIdAction',
         appkey: this._appkey,
@@ -315,7 +319,7 @@ GeTui.prototype.getAPNContentId = function(appId, message, callback) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + host + '] 获取contentId失败:' + response.result));
+            callback && callback(new Error('host:[' + _this.host + '] 获取contentId失败:' + response.result));
         }
     });
 

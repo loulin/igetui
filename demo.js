@@ -1,18 +1,18 @@
 'use strict';
 
-var GeTui = require('./GT.push');
-var Target = require('./getui/Target');
+var GeTui = require('./index');
+var Target = GeTui.Target;
 
-var APNTemplate = require('./getui/template/APNTemplate');
-var NotyPopLoadTemplate = require('./getui/template/NotyPopLoadTemplate');
-var LinkTemplate = require('./getui/template/LinkTemplate');
-var NotificationTemplate = require('./getui/template/NotificationTemplate');
-var PopupTransmissionTemplate = require('./getui/template/PopupTransmissionTemplate');
-var TransmissionTemplate = require('./getui/template/TransmissionTemplate');
+var APNTemplate = GeTui.Template.APNTemplate;
+var NotyPopLoadTemplate = GeTui.Template.NotyPopLoadTemplate;
+var LinkTemplate = GeTui.Template.LinkTemplate;
+var NotificationTemplate = GeTui.Template.NotificationTemplate;
+var PopupTransmissionTemplate = GeTui.Template.PopupTransmissionTemplate;
+var TransmissionTemplate = GeTui.Template.TransmissionTemplate;
 
-var SingleMessage = require('./getui/message/SingleMessage');
-var AppMessage = require('./getui/message/AppMessage');
-var ListMessage = require('./getui/message/ListMessage');
+var SingleMessage = GeTui.Message.SingleMessage;
+var AppMessage = GeTui.Message.AppMessage;
+var ListMessage = GeTui.Message.ListMessage;
 
 
 var HOST = 'http://sdk.open.api.igexin.com/apiex.htm';
@@ -50,7 +50,7 @@ function stoptask() {
 function setClientTag() {
     gt.setClientTag(APPID, CID, ['aa','bb','cc'], function (err, res) {
         console.log(res);
-    })
+    });
 }
 function getUserStatus() {
     gt.getClientIdStatus(APPID, CID, function (err, res) {
@@ -84,14 +84,14 @@ function pushAPNMessageToList() {
         gt.pushAPNMessageToList(APPID, contentId, [DEVICETOKEN], function (err, res) {
             console.log(res);
         });
-    })
+    });
 }
 
 function pushMessageToSingle() {
 //    var template = TransmissionTemplateDemo();
-//    var template = LinkTemplateDemo();
-//    var template = NotificationTemplateDemo();
-    var template = NotyPopLoadTemplateDemo();
+//    var template = linkTemplateDemo();
+//    var template = notificationTemplateDemo();
+    var template = notyPopLoadTemplateDemo();
 
     //个推信息体
     var message = new SingleMessage({
@@ -109,7 +109,7 @@ function pushMessageToSingle() {
     //target.setAppId(APPID).setClientId(CID);
 
     gt.pushMessageToSingle(message, target, function (err, res) {
-        console.log("demo print", res);
+        console.log('demo print', res);
     });
 
 }
@@ -117,10 +117,10 @@ function pushMessageToSingle() {
 function pushMessageToList() {
     process.env.needDetails = true;
     // var taskGroupName = 'test';
-     var taskGroupName = "toList任务组名";
+     var taskGroupName = 'toList任务组名';
 
     //消息类型 :状态栏链接 点击通知打开网页
-    var template = LinkTemplateDemo();
+    var template = linkTemplateDemo();
 
     //个推信息体
     var message = new ListMessage({
@@ -141,7 +141,7 @@ function pushMessageToList() {
         var targetList = [target1];
 //        gt.needDetails = true;
 
-        console.log("getContentId", res);
+        console.log('getContentId', res);
         gt.pushMessageToList(contentId, targetList, function (err, res) {
             console.log(res);
         });
@@ -153,7 +153,7 @@ function pushMessageToApp() {
     var taskGroupName = null;
 
     //消息类型 : 状态栏通知 点击通知启动应用
-    var template = NotificationTemplateDemo();
+    var template = notificationTemplateDemo();
 
     //个推信息体
     //基于应用消息体
@@ -179,7 +179,7 @@ function pushMessageToApp() {
 // 3.NotificationTemplate：通知透传功能模板
 // 4.NotyPopLoadTemplate：通知弹框下载功能模板
 
-function NotyPopLoadTemplateDemo() {
+function notyPopLoadTemplateDemo() {
     var template = new NotyPopLoadTemplate({
         appId: APPID,
         appKey: APPKEY,
@@ -203,7 +203,7 @@ function NotyPopLoadTemplateDemo() {
     return template;
 }
 
-function LinkTemplateDemo() {
+function linkTemplateDemo() {
     var template = new LinkTemplate({
         appId: APPID,
         appKey: APPKEY,
@@ -223,7 +223,7 @@ function LinkTemplateDemo() {
     return template;
 }
 
-function NotificationTemplateDemo() {
+function notificationTemplateDemo() {
     var template = new NotificationTemplate({
         appId: APPID,
         appKey: APPKEY,

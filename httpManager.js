@@ -30,14 +30,14 @@ var httpManager = {
                     timeout: TIMEOUT
                 },
                 function (err, res, data) {
-                    if (!err && res.statusCode == 200) {
+                    if (!err && res.statusCode === 200) {
                         callback&&callback(null, data);
                     } else if (--tries) {
                         attempt();
                     } else {
                         callback&&callback(err, data);
                     }
-                })
+                });
         }
     }
 };

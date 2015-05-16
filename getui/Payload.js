@@ -1,6 +1,6 @@
 'use strict';
 var util = require('util');
-var APS = "aps";
+var APS = 'aps';
 var Payload = function(options) {
 };
 
@@ -15,7 +15,9 @@ Payload.prototype.addParam = function(key, obj) {
     if (key.toLowerCase() === APS) {
         throw new Error('the key can\'t be aps');
     }
-    if (!this.params) this.params = {};
+    if (!this.params) {
+        this.params = {};
+    }
     this.params[key] = obj;
     return this;
 };
@@ -100,7 +102,7 @@ Payload.prototype.toString = function() {
     } else {
         if (this.getAlertBody() !== null || this.getAlertLocKey() !== null) {
             var alertObj = {};
-            this.getAlertBody() !== null && (alertObj['body'] = this.getAlertBody());
+            this.getAlertBody() !== null && (alertObj.body = this.getAlertBody());
             this.getAlertActionLocKey() !== null&& (alertObj['action-loc-key'] = this.getAlertActionLocKey());
             this.getAlertLocKey() !== null&& (alertObj['loc-key'] = this.getAlertLocKey());
             this.getAlertLaunchImage() !== null&& (alertObj['launch-image'] = this.getAlertLaunchImage());

@@ -3,7 +3,7 @@ var Payload = require('./Payload');
 module.exports.validatePayloadLength = function(options) {
     var json = this.processPayload(options);
     //将汉字转换成3个字符长度
-    return json.replace(/[^\x00-\xff]/g,"011").length;
+    return json.replace(/[^\x00-\xff]/g,'011').length;
 };
 module.exports.processPayload = function(options) {
     var isValid = false;
@@ -13,7 +13,7 @@ module.exports.processPayload = function(options) {
         pb.setAlertLocKey(options.locKey);
         // loc-args
         if (options.locArgs !== null && options.locArgs.length > 0) {
-            pb.setAlertLocArgs(options.locArgs.split(","));
+            pb.setAlertLocArgs(options.locArgs.split(','));
         }
         isValid = true;
     }
@@ -60,12 +60,12 @@ module.exports.processPayload = function(options) {
     }
 
     if(!isValid){
-        throw new Error("one of the params(locKey,message,badge) must not be null or contentAvailable must be 1");
+        throw new Error('one of the params(locKey,message,badge) must not be null or contentAvailable must be 1');
     }
     var json = pb.toString();
 
     if(!json){
-        throw new Error("payload json is null");
+        throw new Error('payload json is null');
     }
     return json;
 };
