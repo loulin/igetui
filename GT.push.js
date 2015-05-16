@@ -126,7 +126,7 @@ GeTui.prototype.httpPostJson = function (host, postData, callback) {
  * @param callback
  */
 GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
-    var _this = this;
+    var host = this._host;
     var postData = {
         action: 'getContentIdAction',
         appkey: this._appkey,
@@ -159,7 +159,7 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + _this.host + ']' + '获取contentId失败'), response);
+            callback && callback(new Error('host:[' + host + ']' + '获取contentId失败'), response);
         }
     });
 
@@ -173,7 +173,7 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
  * @return boolean 返回是否成功
  */
 GeTui.prototype.cancelContentId = function(contentId, callback) {
-    var _this = this;
+    var host = this._host;
     var postData = {
         action: 'cancleContentIdAction',
         appkey: this._appkey,
@@ -183,7 +183,7 @@ GeTui.prototype.cancelContentId = function(contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + _this.host + ']' + '取消contentId失败'), false);
+            callback && callback(new Error('host:[' + host + ']' + '取消contentId失败'), false);
         }
     });
 
@@ -201,7 +201,7 @@ GeTui.prototype.cancelContentId = function(contentId, callback) {
  * @return 是否成功停止
  */
 GeTui.prototype.stop = function(contentId, callback) {
-    var _this = this;
+    var host = this._host;
     var postData = {
         action: 'stopTaskAction',
         appkey: this._appkey,
@@ -211,7 +211,7 @@ GeTui.prototype.stop = function(contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + _this.host + ']' + '取消任务失败'), false);
+            callback && callback(new Error('host:[' + host + ']' + '取消任务失败'), false);
         }
     });
 };
@@ -308,7 +308,7 @@ GeTui.prototype.pushAPNMessageToList = function(appId, contentId, deviceTokenLis
 };
 
 GeTui.prototype.getAPNContentId = function(appId, message, callback) {
-    var _this = this;
+    var host = this._host;
     var postData = {
         action: 'apnGetContentIdAction',
         appkey: this._appkey,
@@ -319,7 +319,7 @@ GeTui.prototype.getAPNContentId = function(appId, message, callback) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + _this.host + '] 获取contentId失败:' + response.result));
+            callback && callback(new Error('host:[' + host + '] 获取contentId失败:' + response.result));
         }
     });
 
