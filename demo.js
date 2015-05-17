@@ -1,5 +1,5 @@
 'use strict';
-
+/* jshint unused:false */
 var GeTui = require('./index');
 var Target = GeTui.Target;
 

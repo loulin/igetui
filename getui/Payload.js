@@ -1,7 +1,6 @@
 'use strict';
-var util = require('util');
 var APS = 'aps';
-var Payload = function(options) {
+var Payload = function() {
 };
 
 Payload.prototype.getParams = function() {

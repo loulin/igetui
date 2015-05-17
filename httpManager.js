@@ -4,7 +4,7 @@ var request = require('request');
 // 最大重连次数
 var MAX_HTTP_RETRIES = 4;
 // 重连等待时间
-var RETRY_DELAY = 5000;
+// var RETRY_DELAY = 5000;
 // 连接超时时间
 var TIMEOUT = 30000;
 
