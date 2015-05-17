@@ -1,6 +1,6 @@
 {
   "name": "igetui",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Node wrapper for getui OS SDK API",
   "main": "index.js",
   "keywords": [
@@ -10,13 +10,16 @@
     "os",
     "android"
   ],
-  "author": [{
-    "name": "getui.com",
-    "url": "http://www.igetui.com"
-  }, {
-    "name": "Lin Lou",
-    "email": "lin.lou@hotmail.com"
-  }],
+  "author": [
+    {
+      "name": "getui.com",
+      "url": "http://www.igetui.com"
+    },
+    {
+      "name": "Lin Lou",
+      "email": "lin.lou@hotmail.com"
+    }
+  ],
   "engines": [
     "node >= 0.4.7"
   ],
