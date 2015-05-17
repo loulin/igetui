@@ -120,7 +120,7 @@ GeTui.prototype.httpPostJson = function (host, postData, callback) {
 };
 
 /**
- * 批量推送前需要通过这个接口向服务其申请一个“ContentID”
+ * 批量推送前需要通过这个接口向服务器申请一个“ContentID”
  * @param message
  * @param taskGroupName 可为空
  * @param callback
@@ -416,6 +416,21 @@ GeTui.prototype.unBindAlias = function(appId, alias, clientId, callback) {
     }
     this.httpPostJson(this._host, postData, callback);
 };
-
+/**
+ * 获取推送结果
+ * @param taskId  任务id
+ * @param callback
+ */
+GeTui.prototype.getPushMsgResult = function(taskId, callback) {
+  var str = this._masterSecret + 'action' + 'getPushMsgResult' + 'appkey' + this._appkey + 'taskId' + taskId;
+  var sign = utils.md5(str);
+  var postData = {
+    action: 'getPushMsgResult',
+    appkey: this._appkey,
+    taskId: taskId,
+    sign: sign
+  };
+  this.httpPostJson(this._host, postData, callback);
+};
 
 module.exports = GeTui;
