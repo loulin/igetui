@@ -265,6 +265,8 @@ GeTui.prototype.pushMessageToApp = function(message, taskGroupName, callback) {
                 contentId: contentId
             };
             _this.httpPostJson(_this._host, postData, callback);
+        } else {
+            callback && callback(err);
         }
     });
 };
@@ -417,7 +419,7 @@ GeTui.prototype.unBindAlias = function(appId, alias, clientId, callback) {
     this.httpPostJson(this._host, postData, callback);
 };
 /**
- * 获取推送结果
+ * 获取推送结果(仅限批量发送返回的任务id)
  * @param taskId  任务id
  * @param callback
  */
