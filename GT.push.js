@@ -104,7 +104,7 @@ GeTui.prototype.httpPostJson = function (host, postData, callback) {
     var _this = this;
     httpManager.post(host, postData, function (err, response) {
 //        console.log(response);
-        if (response.result === 'sign_error') {
+        if (!err && response.result === 'sign_error') {
             _this.connect(function (err, result) {
 //                console.log(result);
                 if (!!result) {
@@ -264,7 +264,7 @@ GeTui.prototype.pushMessageToApp = function(message, taskGroupName, callback) {
                 type: 2,
                 contentId: contentId
             };
-            _this.httpPostJson(_this._host, postData, callback);
+            _this.httpPostJson(host, postData, callback);
         } else {
             callback && callback(err);
         }
