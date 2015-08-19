@@ -5,8 +5,14 @@ var utils = require('./getui/utils');
 var httpManager = require('./httpManager');
 var ListMessage = require('./getui/message/ListMessage');
 var AppMessage = require('./getui/message/AppMessage');
+var GtConfig = require('./GtConfig');
+var RequestError = require('./RequestError');
+var util = require('util');
+var request = require('request');
+var BatchImpl = require('./BatchImpl');
 
-process.env.needDetails = false;
+var instance = [];
+var serviceMap = [];
 
 /**
  *
@@ -16,25 +22,80 @@ process.env.needDetails = false;
  * @constructor
  */
 function GeTui(host, appkey, masterSecret) {
-    if (!host || !appkey || !masterSecret) {
-        throw new TypeError('required host, appkey and masterSecret');
+    if (instance[appkey] == null) {
+        this._appkey = appkey;
+        this._masterSecret = masterSecret;
+        this._host = host;
+        // 第一次，启动定时检测
+        var _this = this;
+        if (serviceMap[this._appkey] == null) {
+            this.getOSPushDomainUrlList(function (err, resp) {
+                if (resp != null && resp["result"] == "ok" && resp["osList"].length > 0) {
+                    serviceMap[_this._appkey] = resp["osList"];
+                    _this.inspect();
+                }
+            });
+        }
+        instance[appkey] = this;
     }
-    this._host = host;
-    this._appkey = appkey;
-    this._masterSecret = masterSecret;
+
+    return instance[appkey];
 }
+
+GeTui.prototype.inspect = function () {
+    var _this = this;
+    setInterval(function () {
+        var hosts = serviceMap[_this._appkey];
+        if (hosts.length <= 1) {
+            return;
+        }
+        var mint = 60000;
+        var s = Date.now();
+        for (var idx in hosts) {
+            try {
+                request({
+                    method: 'head',
+                    uri: hosts[idx]
+                }, function (err, res, data) {
+                    if (!err && res.statusCode == 200) {
+                        var _h = hosts[idx];
+                        var diff = Date.now() - s;
+                        if (diff < mint) {
+                            mint = diff;
+                            _this._host = _h;
+                        }
+                    }
+                });
+            } catch (e) {
+                //console.log(e);
+            }
+        }
+    }, GtConfig.getHttpInspectInterval());
+};
+
+GeTui.prototype.getOSPushDomainUrlList = function (callback) {
+    var postData = {
+        action: 'getOSPushDomailUrlListAction',
+        appkey: this._appkey
+    };
+    this.httpPostJson(this._host, postData, false, callback);
+};
+
+GeTui.prototype.getBatch = function () {
+    return new BatchImpl(this._appkey, this);
+};
 
 /**
  * 与服务其建立连接
  * connect to the server
  * @return true -- 连接成功 false -- 连接失败
- * 		   true -- connection sucessful false -- connection failure
+ *           true -- connection sucessful false -- connection failure
  * @throws IOException
  *         出现任何连接异常
  *         For any IO Exceptions
  */
-GeTui.prototype.connect = function(callback) {
-    console.log('connect being invoked...');
+GeTui.prototype.connect = function (callback) {
+//    console.log("connect being invoked...");
     var timeStamp = new Date().getTime();
     // 计算sign值
     var sign = utils.md5(this._appkey + timeStamp + this._masterSecret); //必须按顺序
@@ -44,24 +105,22 @@ GeTui.prototype.connect = function(callback) {
         timeStamp: timeStamp,
         sign: sign
     };
-    httpManager.post(this._host, postData, function(err, data) {  //返回一个JSON格式的数据
+    httpManager.post(this._host, postData, false, function (err, data) {  //返回一个JSON格式的数据
         callback && callback(err, data && 'success' === data.result);
     });
 };
-
-
 
 /**
  * 关闭连接
  * disconnect to server
  * @throws IOException
  */
-GeTui.prototype.close = function(callback) {
+GeTui.prototype.close = function (callback) {
     var postData = {
         'action': 'close',
         'appkey': this._appkey
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
 /**
@@ -73,60 +132,59 @@ GeTui.prototype.close = function(callback) {
  *        目标用户
  *        target client
  * @return 推送结果
- * 		   push result
+ *           push result
  */
-GeTui.prototype.pushMessageToSingle = function(message, target, callback) {
-    var postData = {
-        'action': 'pushMessageToSingleAction',
-        'appkey': this._appkey,
+GeTui.prototype.pushMessageToSingle = function (message, target, requestId, callback) {
+    if (typeof requestId === 'function') {
+        callback = requestId;
+        requestId = utils.uuid();
+    }
 
-        //message
-        'clientData': message.getData().getTransparent().toBase64(),
-        'transmissionContent': message.getData().getTransmissionContent(),
-        'isOffline': message.getOffline(),
-        'offlineExpireTime': message.getOfflineExpireTime(),
-        'pushType': message.getData().getPushType(),
-        'pushNetWorkType': message.getPushNetWorkType(),
-
-        //target
-        'appId': target.getAppId(),
-        'clientId': target.getClientId(),
-        'alias': target.getAlias(),
-
-        // 默认都为消息
-        // Default as message
-        'type': 2
-    };
-    this.httpPostJson(this._host, postData, callback);
+    var postData = utils.createPostParams(message, target, requestId, this._appkey);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
-GeTui.prototype.httpPostJson = function (host, postData, callback) {
+GeTui.prototype.httpPostJson = function (host, postData, needGzip, callback) {
     var _this = this;
-    httpManager.post(host, postData, function (err, response) {
-//        console.log(response);
-        if (!err && response.result === 'sign_error') {
+    postData.version = GtConfig.getSDKVersion();
+    httpManager.post(host, postData, needGzip, function (err, response) {
+//        console.log("httpPostJson get:" + response.result);
+        if (response && response.result == "sign_error") {
+//            console.log("holy shit, get sign_error from server");
             _this.connect(function (err, result) {
-//                console.log(result);
-                if (!!result) {
-                    httpManager.post(host, postData, callback);
+                if (result == true) {
+                    //console.log("connect success.");
+//                    console.log("so retry", host, postData);
+                    httpManager.post(host, postData, needGzip, callback);
                 } else {
-                    console.log('connect failed still');
+                    callback(new Error("connect failed"));
                 }
             });
+        } else if (response && response.result == "domain_error") {
+//            console.log("get domain_error from server");
+            serviceMap[this._appkey] = response['osList'];
+            _this.host = response['osList'][0];
+            httpManager.post(_this._host, postData, needGzip, callback);
         } else {
+//          console.log(postData.action + ", response is null");
+            if (response == null && postData.requestId != null) {
+                if(err == null){
+                    err = {};
+                }
+                err.exception = new RequestError(postData.requestId);
+            }
             callback && callback(err, response);
         }
     });
 };
 
 /**
- * 批量推送前需要通过这个接口向服务器申请一个“ContentID”
+ * 批量推送前需要通过这个接口向服务其申请一个“ContentID”
  * @param message
  * @param taskGroupName 可为空
  * @param callback
  */
-GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
-    var host = this._host;
+GeTui.prototype.getContentId = function (message, taskGroupName, callback) {
     var postData = {
         action: 'getContentIdAction',
         appkey: this._appkey,
@@ -142,12 +200,12 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
         callback = taskGroupName;
         taskGroupName = null;
     }
-    if(taskGroupName){
+    if (taskGroupName) {
         postData.taskGroupName = taskGroupName;
     }
-    if(message instanceof ListMessage) {
+    if (message instanceof ListMessage) {
         postData.contentType = 1;
-    } else if(message instanceof AppMessage){
+    } else if (message instanceof AppMessage) {
         postData.contentType = 2;
         postData.appIdList = message.getAppIdList();
         postData.phoneTypeList = message.getPhoneTypeList();
@@ -155,11 +213,11 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
         postData.tagList = message.getTagList();
         postData.speed = message.getSpeed();
     }
-    this.httpPostJson(this._host, postData, function(err, response) {
+    this.httpPostJson(this._host, postData, false, function (err, response) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '获取contentId失败'), response);
+            callback && callback(new Error('host:[' + this._host + ']' + '获取contentId失败'), response);
         }
     });
 
@@ -172,14 +230,13 @@ GeTui.prototype.getContentId = function(message, taskGroupName, callback) {
  * @param callback
  * @return boolean 返回是否成功
  */
-GeTui.prototype.cancelContentId = function(contentId, callback) {
-    var host = this._host;
+GeTui.prototype.cancelContentId = function (contentId, callback) {
     var postData = {
         action: 'cancleContentIdAction',
         appkey: this._appkey,
         contentId: contentId
     };
-    this.httpPostJson(this._host, postData, function(err, response) {
+    this.httpPostJson(this._host, postData, false, function (err, response) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
@@ -200,18 +257,17 @@ GeTui.prototype.cancelContentId = function(contentId, callback) {
  * @param contentId 内容ID
  * @return 是否成功停止
  */
-GeTui.prototype.stop = function(contentId, callback) {
-    var host = this._host;
+GeTui.prototype.stop = function (contentId, callback) {
     var postData = {
         action: 'stopTaskAction',
         appkey: this._appkey,
         contentId: contentId
     };
-    this.httpPostJson(this._host, postData, function(err, response) {
+    this.httpPostJson(this._host, postData, false, function (err, response) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '取消任务失败'), false);
+            callback && callback(new Error('host:[' + this._host + ']' + '取消任务失败'), false)
         }
     });
 };
@@ -226,16 +282,49 @@ GeTui.prototype.stop = function(contentId, callback) {
  * @param callback
  * @return
  */
-GeTui.prototype.pushMessageToList = function(contentId, targetList, callback) {
+GeTui.prototype.pushMessageToList = function (contentId, targetList, callback) {
+    var cidList = [];
+    var aliasList = [];
+    var appId = null;
+
+    var needDetails = GtConfig.isPushListNeedDetails();
+    var async = GtConfig.isPushListAsync();
+    var limit;
+    if (async && (!needDetails)) {
+        limit = GtConfig.getAsyncListLimit();
+    } else {
+        limit = GtConfig.getSyncListLimit();
+    }
+    if (targetList.length > limit) {
+        callback && callback(new Error('target size:' + targetList.length + ' beyond the limit:' + limit), null);
+        return;
+    }
+
+    for (var idx in targetList) {
+        var target = targetList[idx];
+        var cid = target.getClientId();
+        var alias = target.getAlias();
+        if (cid != null && cid.trim() != "") {
+            cidList.push(cid);
+        } else if (alias != null && alias.trim() != "") {
+            aliasList.push(alias);
+        }
+        if (appId == null || appId.trim() == "") {
+            appId = target.getAppId();
+        }
+    }
     var postData = {
         action: 'pushMessageToListAction',
         appkey: this._appkey,
-        targetList: targetList,
+        appId: appId,
+        clientIdList: cidList,
+        aliasList: aliasList,
         contentId: contentId,
         type: 2,
-        needDetails: process.env.needDetails === 'true'
+        needDetails: needDetails,
+        async: async
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, true, callback);
 };
 
 /**
@@ -248,25 +337,23 @@ GeTui.prototype.pushMessageToList = function(contentId, targetList, callback) {
  * @param callback
  * @return
  */
-GeTui.prototype.pushMessageToApp = function(message, taskGroupName, callback) {
-    var host = this._host;
-    var appkey = this._appkey;
+GeTui.prototype.pushMessageToApp = function (message, taskGroupName, callback) {
     if (typeof taskGroupName === 'function') {
         callback = taskGroupName;
         taskGroupName = null;
     }
     var _this = this;
-    this.getContentId(message, taskGroupName, function(err, contentId) {
+    this.getContentId(message, taskGroupName, function (err, contentId) {
         if (!err) {
             var postData = {
                 action: 'pushMessageToAppAction',
-                appkey: appkey,
+                appkey: _this._appkey,
                 type: 2,
                 contentId: contentId
             };
-            _this.httpPostJson(host, postData, callback);
+            _this.httpPostJson(_this._host, postData, false, callback);
         } else {
-            callback && callback(err);
+            callback(err, null);
         }
     });
 };
@@ -277,7 +364,7 @@ GeTui.prototype.pushMessageToApp = function(message, taskGroupName, callback) {
  * @param message
  * @param callback
  */
-GeTui.prototype.pushAPNMessageToSingle = function(appId, deviceToken, message, callback) {
+GeTui.prototype.pushAPNMessageToSingle = function (appId, deviceToken, message, callback) {
     if (deviceToken.length !== 64) {
         throw new TypeError('deviceToken length must be 64');
     }
@@ -288,11 +375,11 @@ GeTui.prototype.pushAPNMessageToSingle = function(appId, deviceToken, message, c
         DT: deviceToken,
         PI: message.getData().getPushInfo().toBase64()
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
-GeTui.prototype.pushAPNMessageToList = function(appId, contentId, deviceTokenList, callback) {
-    deviceTokenList.forEach(function(deviceToken) {
+GeTui.prototype.pushAPNMessageToList = function (appId, contentId, deviceTokenList, callback) {
+    deviceTokenList.forEach(function (deviceToken) {
         if (deviceToken.length !== 64) {
             throw new TypeError('deviceToken length must be 64');
         }
@@ -304,40 +391,40 @@ GeTui.prototype.pushAPNMessageToList = function(appId, contentId, deviceTokenLis
         appkey: this._appkey,
         contentId: contentId,
         DTL: deviceTokenList,
-        needDetails: process.env.needDetails === 'true'
+        needDetails: GtConfig.isPushListNeedDetails(),
+        async: GtConfig.isPushListAsync()
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, true, callback);
 };
 
-GeTui.prototype.getAPNContentId = function(appId, message, callback) {
-    var host = this._host;
+GeTui.prototype.getAPNContentId = function (appId, message, callback) {
     var postData = {
         action: 'apnGetContentIdAction',
         appkey: this._appkey,
         appId: appId,
         PI: message.getData().getPushInfo().toBase64()
     };
-    this.httpPostJson(this._host, postData, function(err, response) {
+    this.httpPostJson(this._host, postData, false, function (err, response) {
         if (!err && response.result === 'ok' && response.contentId) {
             callback && callback(null, response.contentId);
         } else {
-            callback && callback(new Error('host:[' + host + '] 获取contentId失败:' + response.result));
+            callback && callback(new Error('host:[' + this._host + '] 获取contentId失败:' + response.result));
         }
     });
 
 };
 
-GeTui.prototype.getClientIdStatus = function(appId, clientId, callback) {
+GeTui.prototype.getClientIdStatus = function (appId, clientId, callback) {
     var postData = {
         action: 'getClientIdStatusAction',
         appkey: this._appkey,
         appId: appId,
         clientId: clientId
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
-GeTui.prototype.setClientTag = function(appId, clientId, tags, callback) {
+GeTui.prototype.setClientTag = function (appId, clientId, tags, callback) {
     var postData = {
         action: 'setTagAction',
         appkey: this._appkey,
@@ -345,7 +432,7 @@ GeTui.prototype.setClientTag = function(appId, clientId, tags, callback) {
         clientId: clientId,
         tagList: tags
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 /**
  * 绑定别名 或bindAlias(appId, targetList, callback)
@@ -354,7 +441,7 @@ GeTui.prototype.setClientTag = function(appId, clientId, tags, callback) {
  * @param clientId  如果是 alias, clientId为空
  * @param callback
  */
-GeTui.prototype.bindAlias = function(appId, alias, clientId, callback) {
+GeTui.prototype.bindAlias = function (appId, alias, clientId, callback) {
     var postData = {
         appkey: this._appkey,
         appid: appId
@@ -369,33 +456,33 @@ GeTui.prototype.bindAlias = function(appId, alias, clientId, callback) {
             callback = clientId;
         }
         var aliaslist = [];
-        targetList.forEach(function(target) {
+        targetList.forEach(function (target) {
             aliaslist.push({cid: target.getClientId(), alias: target.getAlias()});
         });
         postData.aliaslist = aliaslist;
         postData.action = 'alias_bind_list';
     }
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
-GeTui.prototype.queryClientId = function(appId, alias, callback) {
+GeTui.prototype.queryClientId = function (appId, alias, callback) {
     var postData = {
         action: 'alias_query',
         appkey: this._appkey,
         appid: appId,
         alias: alias
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 
-GeTui.prototype.queryAlias = function(appId, clientId, callback) {
+GeTui.prototype.queryAlias = function (appId, clientId, callback) {
     var postData = {
         action: 'alias_query',
         appkey: this._appkey,
         appid: appId,
         cid: clientId
     };
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
 /**
  * 取消别名绑定
@@ -404,7 +491,7 @@ GeTui.prototype.queryAlias = function(appId, clientId, callback) {
  * @param clientId  如果取消全部，clientId 为空
  * @param callback
  */
-GeTui.prototype.unBindAlias = function(appId, alias, clientId, callback) {
+GeTui.prototype.unBindAlias = function (appId, alias, clientId, callback) {
     var postData = {
         action: 'alias_unbind',
         appkey: this._appkey,
@@ -416,23 +503,46 @@ GeTui.prototype.unBindAlias = function(appId, alias, clientId, callback) {
     } else if (typeof clientId === 'function') {
         callback = clientId;
     }
-    this.httpPostJson(this._host, postData, callback);
+    this.httpPostJson(this._host, postData, false, callback);
 };
-/**
- * 获取推送结果(仅限批量发送返回的任务id)
- * @param taskId  任务id
- * @param callback
- */
-GeTui.prototype.getPushMsgResult = function(taskId, callback) {
-  var str = this._masterSecret + 'action' + 'getPushMsgResult' + 'appkey' + this._appkey + 'taskId' + taskId;
-  var sign = utils.md5(str);
-  var postData = {
-    action: 'getPushMsgResult',
-    appkey: this._appkey,
-    taskId: taskId,
-    sign: sign
-  };
-  this.httpPostJson(this._host, postData, callback);
+
+GeTui.prototype.getPushResult = function (taskId, callback) {
+    var postData = {
+        action: 'getPushMsgResult',
+        appkey: this._appkey,
+        taskId: taskId
+    };
+    this.httpPostJson(this._host, postData, false, callback);
+};
+
+GeTui.prototype.getUserTags = function (appId, clientId, callback) {
+    var postData = {
+        action: 'getUserTags',
+        appkey: this._appkey,
+        appId: appId,
+        clientId: clientId
+    };
+    this.httpPostJson(this.host, postData, false, callback);
+};
+
+GeTui.prototype.queryAppPushDataByDate = function (appId, date, callback) {
+    var postData = {
+        action: 'queryAppPushData',
+        appkey: this._appkey,
+        appId: appId,
+        date: date
+    };
+    this.httpPostJson(this._host, postData, false, callback);
+};
+
+GeTui.prototype.queryAppUserDataByDate = function (appId, date, callback) {
+    var postData = {
+        action: 'queryAppUserData',
+        appkey: this._appkey,
+        appId: appId,
+        date: date
+    };
+    this.httpPostJson(this._host, postData, false,  callback);
 };
 
 module.exports = GeTui;

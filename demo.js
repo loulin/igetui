@@ -1,18 +1,22 @@
 'use strict';
-/* jshint unused:false */
-var GeTui = require('./index');
-var Target = GeTui.Target;
 
-var APNTemplate = GeTui.Template.APNTemplate;
-var NotyPopLoadTemplate = GeTui.Template.NotyPopLoadTemplate;
-var LinkTemplate = GeTui.Template.LinkTemplate;
-var NotificationTemplate = GeTui.Template.NotificationTemplate;
-var PopupTransmissionTemplate = GeTui.Template.PopupTransmissionTemplate;
-var TransmissionTemplate = GeTui.Template.TransmissionTemplate;
+var GeTui = require('./GT.push');
+var Target = require('./getui/Target');
 
-var SingleMessage = GeTui.Message.SingleMessage;
-var AppMessage = GeTui.Message.AppMessage;
-var ListMessage = GeTui.Message.ListMessage;
+var APNTemplate = require('./getui/template/APNTemplate');
+var BaseTemplate = require('./getui/template/BaseTemplate');
+var APNPayload = require('./payload/APNPayload');
+var DictionaryAlertMsg = require('./payload/DictionaryAlertMsg');
+var SimpleAlertMsg = require('./payload/SimpleAlertMsg');
+var NotyPopLoadTemplate = require('./getui/template/NotyPopLoadTemplate');
+var LinkTemplate = require('./getui/template/LinkTemplate');
+var NotificationTemplate = require('./getui/template/NotificationTemplate');
+var PopupTransmissionTemplate = require('./getui/template/PopupTransmissionTemplate');
+var TransmissionTemplate = require('./getui/template/TransmissionTemplate');
+
+var SingleMessage = require('./getui/message/SingleMessage');
+var AppMessage = require('./getui/message/AppMessage');
+var ListMessage = require('./getui/message/ListMessage');
 
 
 var HOST = 'http://sdk.open.api.igexin.com/apiex.htm';
@@ -25,20 +29,37 @@ var DEVICETOKEN='';
 var alias='demo';
 
 var gt = new GeTui(HOST, APPKEY, MASTERSECRET);
-    pushAPN();
-//    getUserStatus();
-//    pushMessageToSingle();
-//    pushMessageToList();
+//pushAPN();
+//  pushAPNL();
+//getUserStatus();
+pushMessageToSingle();
+//pushMessageToSingleBatch();
+//pushMessageToList();
 //    pushMessageToApp();
 //    stoptask();
 //    setClientTag();
 
-//    aliasBind();
-//    queryCID();
-//    queryAlias();
-//    aliasBatch();
+//别名绑定操作
+//aliasBind();
+//queryCID();
+//queryAlias();
+//aliasBatch();
 //    aliasUnBind();
 //    aliasUnBindAll();
+
+//结果查询操作
+//getResultDemo();
+
+function getResultDemo(){
+    gt.queryAppPushDataByDate(APPID,"20150525",function(err, res){
+        console.log(res);
+    });
+
+    //gt.queryAppUserDataByDate(APPID,"20150525",function(err, res){
+    //    console.log(res);
+    //});
+
+}
 
 
 //推送任务停止
@@ -48,9 +69,9 @@ function stoptask() {
     });
 }
 function setClientTag() {
-    gt.setClientTag(APPID, CID, ['aa','bb','cc'], function (err, res) {
+    gt.setClientTag(APPID, CID, ['aa','哔哔','》？》','！@#￥%……&*（）'], function (err, res) {
         console.log(res);
-    });
+    })
 }
 function getUserStatus() {
     gt.getClientIdStatus(APPID, CID, function (err, res) {
@@ -59,23 +80,88 @@ function getUserStatus() {
 }
 
 function pushAPN() {
-    var template = new APNTemplate();
-    template.setPushInfo({actionLocKey: 'actionLocKey', badge: 2, message: 'message',
-        sound: 'test1.wav', payload: 'payload', locKey: 'locKey',
-        locArgs: 'locArgs', launchImage: 'launchImage',contentAvailable:1});
-    var message = new SingleMessage();
 
+    //APN简单推送
+    //var template = new APNTemplate();
+    //var payload = new APNPayload();
+    //var alertMsg = new SimpleAlertMsg();
+    //alertMsg.alertMsg="AlertMsg";
+    //payload.alertMsg = alertMsg;
+    //payload.badge=5;
+    //payload.contentAvailable =1;
+    //payload.category="ACTIONABLE";
+    //payload.sound="test1.wav";
+    //payload.customMsg.payload1="payload";
+    //template.setApnInfo(payload);
+
+    //APN高级推送
+//    var template = new APNTemplate();
+//    var payload = new APNPayload();
+//    var alertMsg = new DictionaryAlertMsg();
+//    alertMsg.body = "";
+//    alertMsg.actionLocKey = "";
+//    alertMsg.locKey = "";
+//    alertMsg.locArgs = Array("");
+//    alertMsg.launchImage = "";
+//    //ios8.2以上版本支持
+//    alertMsg.title = "";
+//    alertMsg.titleLocKey = "";
+//    alertMsg.titleLocArgs = Array("");
+//
+////    payload.alertMsg=alertMsg;
+//    payload.badge=5;
+////    payload.contentAvailable =1;
+////    payload.category="";
+////    payload.sound="";
+////    payload.customMsg.payload1="payload";
+//    template.setApnInfo(payload);
+
+
+    var message = new SingleMessage();
     message.setData(template);
     gt.pushAPNMessageToSingle(APPID, DEVICETOKEN, message, function (err, res) {
         console.log(res);
     });
 }
 
-function pushAPNMessageToList() {
+function pushAPNL() {
+    //APN简单推送
     var template = new APNTemplate();
-    template.setPushInfo({actionLocKey: '', badge: 1, message: '',
-        sound: '', payload: '', locKey: '',
-        locArgs: '', launchImage: ''});
+    var payload = new APNPayload();
+    var alertMsg = new SimpleAlertMsg();
+    alertMsg.alertMsg="AlertMsg";
+    payload.alertMsg=alertMsg;
+    payload.badge=5;
+    payload.contentAvailable =1;
+    payload.category="ACTIONABLE";
+    payload.sound="test1.wav";
+    payload.customMsg.payload="payload";
+    //payload.customMsg.payload1="payload1";
+    template.setApnInfo(payload);
+
+    //APN高级推送
+    //var template = new APNTemplate();
+    //var payload = new APNPayload();
+    //var alertMsg = new DictionaryAlertMsg();
+    //alertMsg.body = "body";
+    //alertMsg.actionLocKey = "actionLocKey";
+    //alertMsg.locKey = "locKey";
+    //alertMsg.locArgs = Array("locArgs","locArgs2");
+    //alertMsg.launchImage = "launchImage";
+    ////ios8.2以上版本支持
+    //alertMsg.title = "title";
+    //alertMsg.titleLocKey = "titleLocKey";
+    //alertMsg.titleLocArgs = Array("titleLocArgs","titleLocArgs2");
+    //
+    //payload.alertMsg=alertMsg;
+    //payload.badge=50;
+    //payload.contentAvailable =1;
+    //payload.category="ACTIONABLE";
+    //payload.sound="";
+    //payload.customMsg.payload="payload";
+    //payload.customMsg.payload1="payload1";
+    //template.setApnInfo(payload);
+
     var message = new ListMessage();
     message.setData(template);
 
@@ -84,18 +170,18 @@ function pushAPNMessageToList() {
         gt.pushAPNMessageToList(APPID, contentId, [DEVICETOKEN], function (err, res) {
             console.log(res);
         });
-    });
+    })
 }
 
 function pushMessageToSingle() {
-//    var template = TransmissionTemplateDemo();
-//    var template = linkTemplateDemo();
-//    var template = notificationTemplateDemo();
-    var template = notyPopLoadTemplateDemo();
+    var template = TransmissionTemplateDemo();
+//    var template = LinkTemplateDemo();
+//    var template = NotificationTemplateDemo();
+//    var template = NotyPopLoadTemplateDemo();
 
     //个推信息体
     var message = new SingleMessage({
-        isOffline: false,                        //是否离线
+        isOffline: true,                        //是否离线
         offlineExpireTime: 3600 * 12 * 1000,    //离线时间
         data: template                          //设置推送消息类型
     });
@@ -108,19 +194,63 @@ function pushMessageToSingle() {
     });
     //target.setAppId(APPID).setClientId(CID);
 
-    gt.pushMessageToSingle(message, target, function (err, res) {
-        console.log('demo print', res);
+        gt.pushMessageToSingle(message, target, function(err, res){
+            if(err != null && err.exception != null && err.exception instanceof  RequestError){
+                var requestId = err.exception.requestId;
+                console.log(err.exception.requestId);
+                gt.pushMessageToSingle(message,target,requestId,function(err, res){
+                    console.log(err);
+                    console.log(res);
+                });
+            }
+        });
+
+}
+function pushMessageToSingleBatch() {
+    process.env.gexin_pushSingleBatch_needAsync=true;
+    var Batch=gt.getBatch();
+
+    var template = TransmissionTemplateDemo();
+//    var template = LinkTemplateDemo();
+//    var template = NotificationTemplateDemo();
+//    var template = NotyPopLoadTemplateDemo();
+
+    //个推信息体
+    var message = new SingleMessage({
+        isOffline: true,                        //是否离线
+        offlineExpireTime: 3600 * 12 * 1000,    //离线时间
+        data: template                          //设置推送消息类型
     });
+
+    //接收方
+    var target = new Target({
+        appId: APPID,
+        clientId: CID
+//        alias:'_lalala_'
+    });
+    Batch.add(message,target);
+
+    Batch.submit(function (err, res) {
+        if(err != null){
+            Batch.retry(function (err, res) {
+                console.log("demo batch retry", res);
+            });
+        }
+        console.log("demo batch submit", res);
+    });
+
 
 }
 
 function pushMessageToList() {
-    process.env.needDetails = true;
+    //process.env.gexin_pushList_needDetails = true;
+    process.env.gexin_pushList_needAsync=true;
+    //process.env.=true;
     // var taskGroupName = 'test';
-     var taskGroupName = 'toList任务组名';
+    var taskGroupName = "toList任务组名";
 
     //消息类型 :状态栏链接 点击通知打开网页
-    var template = linkTemplateDemo();
+    var template = LinkTemplateDemo();
 
     //个推信息体
     var message = new ListMessage({
@@ -141,7 +271,7 @@ function pushMessageToList() {
         var targetList = [target1];
 //        gt.needDetails = true;
 
-        console.log('getContentId', res);
+        console.log("getContentId", res);
         gt.pushMessageToList(contentId, targetList, function (err, res) {
             console.log(res);
         });
@@ -153,7 +283,7 @@ function pushMessageToApp() {
     var taskGroupName = null;
 
     //消息类型 : 状态栏通知 点击通知启动应用
-    var template = notificationTemplateDemo();
+    var template = NotificationTemplateDemo();
 
     //个推信息体
     //基于应用消息体
@@ -179,7 +309,7 @@ function pushMessageToApp() {
 // 3.NotificationTemplate：通知透传功能模板
 // 4.NotyPopLoadTemplate：通知弹框下载功能模板
 
-function notyPopLoadTemplateDemo() {
+function NotyPopLoadTemplateDemo() {
     var template = new NotyPopLoadTemplate({
         appId: APPID,
         appKey: APPKEY,
@@ -203,7 +333,7 @@ function notyPopLoadTemplateDemo() {
     return template;
 }
 
-function linkTemplateDemo() {
+function LinkTemplateDemo() {
     var template = new LinkTemplate({
         appId: APPID,
         appKey: APPKEY,
@@ -216,14 +346,11 @@ function linkTemplateDemo() {
         isClearable: true,
         url: 'http://www.igetui.com'
     });
-    // iOS推送需要设置的pushInfo字段
-    //template.setPushInfo({actionLocKey: 'a', badge: 4, message: 'b', sound: 'com.gexin.ios.silence', payload: 'DDDD', locKey: '近日。',
-    //    locArgs: '', launchImage: ''});
 
     return template;
 }
 
-function notificationTemplateDemo() {
+function NotificationTemplateDemo() {
     var template = new NotificationTemplate({
         appId: APPID,
         appKey: APPKEY,
@@ -236,9 +363,6 @@ function notificationTemplateDemo() {
         transmissionType: 1,
         transmissionContent: '测试离线'
     });
-    // iOS推送需要设置的pushInfo字段
-    //template.setPushInfo({actionLocKey: 'a', badge: 4, message: 'b', sound: 'com.gexin.ios.silence', payload: 'DDDD', locKey: '近日。',
-    //    locArgs: '', launchImage: ''});
     return template;
 }
 
@@ -249,10 +373,38 @@ function TransmissionTemplateDemo() {
         transmissionType: 1,
         transmissionContent: '测试离线'
     });
-    //iOS推送需要设置的pushInfo字段
-    template.setPushInfo({actionLocKey: '', badge: 2, message: '', sound: '', payload: '', locKey: '',
-        locArgs: '', launchImage: ''});
-//    template.setPushInfo({actionLocKey: '按钮名称', badge: 1, message: 'meissage', sound: 'test2.wav'});
+    //APN简单推送
+    //var payload = new APNPayload();
+    ////var alertMsg = new SimpleAlertMsg();
+    ////alertMsg.alertMsg="";
+    ////payload.alertMsg = alertMsg;
+    //payload.badge=5;
+    //payload.contentAvailable =1;
+    //payload.category="";
+    //payload.sound="";
+    ////payload.customMsg.payload1="";
+    //template.setApnInfo(payload);
+
+    //APN高级推送
+    //var payload = new APNPayload();
+    //var alertMsg = new DictionaryAlertMsg();
+    //alertMsg.body = "body";
+    //alertMsg.actionLocKey = "actionLocKey";
+    //alertMsg.locKey = "locKey";
+    //alertMsg.locArgs = Array("locArgs");
+    //alertMsg.launchImage = "launchImage";
+    ////ios8.2以上版本支持
+    //alertMsg.title = "title";
+    //alertMsg.titleLocKey = "titleLocKey";
+    //alertMsg.titleLocArgs = Array("titleLocArgs");
+    //
+    //payload.alertMsg=alertMsg;
+    //payload.badge=5;
+//    payload.contentAvailable =1;
+//    payload.category="";
+//    payload.sound="";
+//    payload.customMsg.payload1="payload";
+//    template.setApnInfo(payload);
     return template;
 }
 

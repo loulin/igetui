@@ -4,12 +4,12 @@ var utils = require('./getui/utils');
 var httpManager = require('./httpManager');
 
 //填写mastersecret
-var MASTERSECRET = '';
+var MASTERSECRET = "";
 //填写appkey
-var APPKEY = '';
+var APPKEY = "";
 //填写taskId
-var TASKID = '';
-var HOST = 'http://sdk.open.api.igexin.com/apiex.htm';
+var TASKID = "";
+var HOST = "http://sdk.open.api.igexin.com/apiex.htm";
 getPushMsgResult(HOST, APPKEY, MASTERSECRET, TASKID, function(err, data) {
   console.log(data);
 });
