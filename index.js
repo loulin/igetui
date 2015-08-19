@@ -17,8 +17,10 @@ GeTui.Message = {
 };
 
 GeTui.Payload = {
-    APNPayload: require('./payload/APNPayload')
-}
+    APNPayload: require('./payload/APNPayload'),
+    SimpleAlertMsg: require('./payload/SimpleAlertMsg'),
+    DictionaryAlertMsg: require('./payload/DictionaryAlertMsg')
+};
 
 GeTui.Target = require('./getui/Target');
 
