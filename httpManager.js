@@ -1,12 +1,8 @@
 'use strict';
-
+var zlib = require('zlib');
 var request = require('request');
-// 最大重连次数
-var MAX_HTTP_RETRIES = 4;
-// 重连等待时间
-// var RETRY_DELAY = 5000;
-// 连接超时时间
-var TIMEOUT = 30000;
+var util = require('util');
+var GtConfig = require('./GtConfig');
 
 var httpManager = {
     /**
@@ -16,26 +12,47 @@ var httpManager = {
      * @param callback
      * @return json数据
      */
-    post: function (host, postData, callback) {
-        postData.version = '3.0.0.0';
-        var tries = MAX_HTTP_RETRIES;
+    post: function (host, postData, needGzip, callback) {
+        postData.version = GtConfig.getSDKVersion();
+        var tries = GtConfig.getHttpTryCount(); // 最大重连次数
+
+        var options = {
+            uri: host,
+            method: 'post',
+            timeout: GtConfig.getHttpSoTimeOut(),
+            headers: {
+                'Content-Type': 'text/html;charset=UTF-8'
+            }
+        };
+        if (needGzip) {
+            options.gzip = true;
+            options.headers['Content-Encoding'] = 'gzip';
+            postData = zlib.gzipSync(JSON.stringify(postData));
+        } else {
+            options.json = true;
+        }
+        options.body = postData;
+        var action = postData['action'];
+        if (action != null && action.length > 0) {
+            options.headers['Gt-Action'] = action;
+        }
         attempt();
         function attempt() {
             request(
-                {
-                    uri: host,
-                    body: postData,
-                    json: true,
-                    method: 'post',
-                    timeout: TIMEOUT
-                },
+                options,
                 function (err, res, data) {
-                    if (!err && res.statusCode === 200) {
-                        callback&&callback(null, data);
+                    if (!err && res.statusCode == 200) {
+//                        console.log("what? got res:" + util.inspect(data));
+                        if (typeof data == 'string') {
+                            data = JSON.parse(data);
+                        }
+//                        console.log("result:" + data.result);
+                        callback && callback(null, data);
+//                        console.log("callback over");
                     } else if (--tries) {
                         attempt();
                     } else {
-                        callback&&callback(err, data);
+                        callback && callback(err, null);
                     }
                 });
         }
