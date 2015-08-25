@@ -10,7 +10,7 @@ function BatchImpl(appKey, push) {
     this.appKey = appKey;
     this.push = push;
     this.seqId = 0;
-    this.innerMsgList = new Array();
+    this.innerMsgList = [];
     this.lastPostData = null;
 }
 
@@ -20,7 +20,7 @@ BatchImpl.prototype.getBatchId = function () {
 
 BatchImpl.prototype.add = function (message, target) {
     if (this.seqId >= 5000) {
-        throw new Error("Can not add over 5000 message once! Please call submit() first.");
+        throw new Error('Can not add over 5000 message once! Please call submit() first.');
     } else {
         var json = utils.createPostParams(message, target, null, this.appKey);
         var item = new GtReq.SingleBatchItem({

@@ -11,7 +11,7 @@ function SimpleAlertMsg() {
 util.inherits(SimpleAlertMsg, AlertMsg);
 
 SimpleAlertMsg.prototype.getAlertMsg = function () {
-    return (this.alertMsg == null || this.alertMsg.length == 0) ? null : this.alertMsg;
+    return !this.alertMsg ? null : this.alertMsg;
 };
 
 module.exports = SimpleAlertMsg;

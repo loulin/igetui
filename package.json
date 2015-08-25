@@ -1,6 +1,6 @@
 {
-  "name": "getui",
-  "version": "0.0.1",
+  "name": "igetui",
+  "version": "0.0.4",
   "description": "Node wrapper for getui OS SDK API",
   "main": "index.js",
   "keywords": [
@@ -10,7 +10,16 @@
     "os",
     "android"
   ],
-  "author": "getui.com",
+  "author": [
+    {
+      "name": "getui.com",
+      "url": "http://www.igetui.com"
+    },
+    {
+      "name": "Lin Lou",
+      "email": "lin.lou@hotmail.com"
+    }
+  ],
   "engines": [
     "node >= 0.4.7"
   ],
@@ -20,5 +29,21 @@
     "request": "^2.51.0",
     "util": "^0.10.3",
     "zlib": "^1.0.5"
-  }
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5",
+    "mocha-jshint": "^2.2.3"
+  },
+  "scripts": {
+    "test": "mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loulin/igetui"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/loulin/igetui/issues"
+  },
+  "homepage": "https://github.com/loulin/igetui"
 }

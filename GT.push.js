@@ -7,7 +7,6 @@ var ListMessage = require('./getui/message/ListMessage');
 var AppMessage = require('./getui/message/AppMessage');
 var GtConfig = require('./GtConfig');
 var RequestError = require('./RequestError');
-var util = require('util');
 var request = require('request');
 var BatchImpl = require('./BatchImpl');
 
@@ -22,16 +21,16 @@ var serviceMap = [];
  * @constructor
  */
 function GeTui(host, appkey, masterSecret) {
-    if (instance[appkey] == null) {
+    if (!instance[appkey]) {
         this._appkey = appkey;
         this._masterSecret = masterSecret;
         this._host = host;
         // 第一次，启动定时检测
         var _this = this;
-        if (serviceMap[this._appkey] == null) {
+        if (!serviceMap[this._appkey]) {
             this.getOSPushDomainUrlList(function (err, resp) {
-                if (resp != null && resp["result"] == "ok" && resp["osList"].length > 0) {
-                    serviceMap[_this._appkey] = resp["osList"];
+                if (resp && resp.result === 'ok' && resp.osList.length > 0) {
+                    serviceMap[_this._appkey] = resp.osList;
                     _this.inspect();
                 }
             });
@@ -51,13 +50,13 @@ GeTui.prototype.inspect = function () {
         }
         var mint = 60000;
         var s = Date.now();
-        for (var idx in hosts) {
+        Object.keys(hosts).forEach(function (idx) {
             try {
                 request({
                     method: 'head',
                     uri: hosts[idx]
-                }, function (err, res, data) {
-                    if (!err && res.statusCode == 200) {
+                }, function (err, res) {
+                    if (!err && res.statusCode === 200) {
                         var _h = hosts[idx];
                         var diff = Date.now() - s;
                         if (diff < mint) {
@@ -69,7 +68,7 @@ GeTui.prototype.inspect = function () {
             } catch (e) {
                 //console.log(e);
             }
-        }
+        });
     }, GtConfig.getHttpInspectInterval());
 };
 
@@ -95,7 +94,7 @@ GeTui.prototype.getBatch = function () {
  *         For any IO Exceptions
  */
 GeTui.prototype.connect = function (callback) {
-//    console.log("connect being invoked...");
+//    console.log('connect being invoked...');
     var timeStamp = new Date().getTime();
     // 计算sign值
     var sign = utils.md5(this._appkey + timeStamp + this._masterSecret); //必须按顺序
@@ -148,27 +147,27 @@ GeTui.prototype.httpPostJson = function (host, postData, needGzip, callback) {
     var _this = this;
     postData.version = GtConfig.getSDKVersion();
     httpManager.post(host, postData, needGzip, function (err, response) {
-//        console.log("httpPostJson get:" + response.result);
-        if (response && response.result == "sign_error") {
-//            console.log("holy shit, get sign_error from server");
+//        console.log('httpPostJson get:' + response.result);
+        if (response && response.result === 'sign_error') {
+//            console.log('holy shit, get sign_error from server');
             _this.connect(function (err, result) {
-                if (result == true) {
-                    //console.log("connect success.");
-//                    console.log("so retry", host, postData);
+                if (result === true) {
+                    //console.log('connect success.');
+//                    console.log('so retry', host, postData);
                     httpManager.post(host, postData, needGzip, callback);
                 } else {
-                    callback(new Error("connect failed"));
+                    callback(new Error('connect failed'));
                 }
             });
-        } else if (response && response.result == "domain_error") {
-//            console.log("get domain_error from server");
-            serviceMap[this._appkey] = response['osList'];
-            _this.host = response['osList'][0];
+        } else if (response && response.result === 'domain_error') {
+//            console.log('get domain_error from server');
+            serviceMap[this._appkey] = response.osList;
+            _this.host = response.osList[0];
             httpManager.post(_this._host, postData, needGzip, callback);
         } else {
-//          console.log(postData.action + ", response is null");
-            if (response == null && postData.requestId != null) {
-                if(err == null){
+//          console.log(postData.action + ', response is null');
+            if (!response && postData.requestId) {
+                if(!err){
                     err = {};
                 }
                 err.exception = new RequestError(postData.requestId);
@@ -179,7 +178,7 @@ GeTui.prototype.httpPostJson = function (host, postData, needGzip, callback) {
 };
 
 /**
- * 批量推送前需要通过这个接口向服务其申请一个“ContentID”
+ * 批量推送前需要通过这个接口向服务器申请一个“ContentID”
  * @param message
  * @param taskGroupName 可为空
  * @param callback
@@ -240,7 +239,7 @@ GeTui.prototype.cancelContentId = function (contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + host + ']' + '取消contentId失败'), false);
+            callback && callback(new Error('host:[' + this._host + ']' + '取消contentId失败'), false);
         }
     });
 
@@ -267,7 +266,7 @@ GeTui.prototype.stop = function (contentId, callback) {
         if (!err && 'ok' === response.result) {
             callback && callback(null, true);
         } else {
-            callback && callback(new Error('host:[' + this._host + ']' + '取消任务失败'), false)
+            callback && callback(new Error('host:[' + this._host + ']' + '取消任务失败'), false);
         }
     });
 };
@@ -300,19 +299,18 @@ GeTui.prototype.pushMessageToList = function (contentId, targetList, callback) {
         return;
     }
 
-    for (var idx in targetList) {
-        var target = targetList[idx];
+    targetList.forEach(function (target) {
         var cid = target.getClientId();
         var alias = target.getAlias();
-        if (cid != null && cid.trim() != "") {
+        if (cid && cid.trim() !== '') {
             cidList.push(cid);
-        } else if (alias != null && alias.trim() != "") {
+        } else if (alias && alias.trim() !== '') {
             aliasList.push(alias);
         }
-        if (appId == null || appId.trim() == "") {
+        if (!appId || appId.trim() === '') {
             appId = target.getAppId();
         }
-    }
+    });
     var postData = {
         action: 'pushMessageToListAction',
         appkey: this._appkey,
@@ -543,6 +541,23 @@ GeTui.prototype.queryAppUserDataByDate = function (appId, date, callback) {
         date: date
     };
     this.httpPostJson(this._host, postData, false,  callback);
+};
+
+/**
+ * 获取推送结果
+ * @param taskId  任务id
+ * @param callback
+ */
+GeTui.prototype.getPushMsgResult = function(taskId, callback) {
+  var str = this._masterSecret + 'action' + 'getPushMsgResult' + 'appkey' + this._appkey + 'taskId' + taskId;
+  var sign = utils.md5(str);
+  var postData = {
+    action: 'getPushMsgResult',
+    appkey: this._appkey,
+    taskId: taskId,
+    sign: sign
+  };
+  this.httpPostJson(this._host, postData, false, callback);
 };
 
 module.exports = GeTui;

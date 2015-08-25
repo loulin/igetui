@@ -62,7 +62,7 @@ BaseTemplate.prototype.getPushInfo = function () {
 BaseTemplate.prototype.setPushInfo = function (options) {
     var alertMsg = new DictionaryAlertMsg();
     alertMsg.locKey = options.locKey;
-    if (options.locArgs != null && options.locArgs != '') {
+    if (options.locArgs) {
         alertMsg.locArgs = [options.locArgs];
     }
     alertMsg.actionLocKey = options.actionLocKey;
@@ -74,7 +74,7 @@ BaseTemplate.prototype.setPushInfo = function (options) {
     apn.badge = options.badge;
     apn.sound = options.sound;
     apn.contentAvailable = options.contentAvailable;
-    if (options.payload != null && options.payload != '') {
+    if (options.payload) {
         apn.customMsg = {'payload': options.payload};
     }
 
@@ -82,16 +82,16 @@ BaseTemplate.prototype.setPushInfo = function (options) {
 };
 
 BaseTemplate.prototype.setApnInfo = function (payload) {
-    if (payload == null || !(payload instanceof Payload)) {
+    if (!payload || !(payload instanceof Payload)) {
         return null;
     }
     var apn = payload.getPayload();
-    if (apn == null || apn == '') {
+    if (!apn) {
         return null;
     }
-    var len = apn.replace(/[^\x00-\xff]/g, "011").length;
+    var len = apn.replace(/[^\x00-\xff]/g, '011').length;
     if (len > APNPayload.PAYLOAD_MAX_BYTES) {
-        throw Error("APN payload length overlength (" + len + ">" + APNPayload.PAYLOAD_MAX_BYTES + ")");
+        throw Error('APN payload length overlength (' + len + '>' + APNPayload.PAYLOAD_MAX_BYTES + ')');
     }
     this.pushInfo.setApnJson(apn);
     this.pushInfo.setInvalidAPN(false);
@@ -105,10 +105,10 @@ BaseTemplate.prototype.setDuration = function (begin, end) {
     var s = (new Date(begin)).getTime();
     var e = (new Date(end)).getTime();
     if (s <= 0 || e <= 0) {
-        throw Error("DateFormat: yyyy-MM-dd HH:mm:ss");
+        throw Error('DateFormat: yyyy-MM-dd HH:mm:ss');
     }
     if (s > e) {
-        throw Error("startTime should be smaller than endTime");
+        throw Error('startTime should be smaller than endTime');
     }
     this.duration = s.toString() + '-' + e.toString();
 };

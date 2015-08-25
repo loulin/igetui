@@ -1,7 +1,6 @@
 'use strict';
 var zlib = require('zlib');
 var request = require('request');
-var util = require('util');
 var GtConfig = require('./GtConfig');
 
 var httpManager = {
@@ -32,8 +31,8 @@ var httpManager = {
             options.json = true;
         }
         options.body = postData;
-        var action = postData['action'];
-        if (action != null && action.length > 0) {
+        var action = postData.action;
+        if (action && action.length > 0) {
             options.headers['Gt-Action'] = action;
         }
         attempt();
@@ -41,9 +40,9 @@ var httpManager = {
             request(
                 options,
                 function (err, res, data) {
-                    if (!err && res.statusCode == 200) {
+                    if (!err && res.statusCode === 200) {
 //                        console.log("what? got res:" + util.inspect(data));
-                        if (typeof data == 'string') {
+                        if (typeof data === 'string') {
                             data = JSON.parse(data);
                         }
 //                        console.log("result:" + data.result);
