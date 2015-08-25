@@ -2,7 +2,7 @@
  * Created by Administrator on 2015/5/15.
  */
 var util = require('util');
-var Payload = require('./Payload');
+var Payload = require('./Payload')
 var AlertMsg = require('./AlertMsg');
 
 function APNPayload() {
