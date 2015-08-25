@@ -1,6 +1,6 @@
 {
   "name": "igetui",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Node wrapper for getui OS SDK API",
   "main": "index.js",
   "keywords": [
